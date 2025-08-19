@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 // PUT - Update specific product type
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
@@ -83,7 +83,7 @@ export async function PUT(
 // DELETE - Delete specific product type
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
@@ -191,7 +191,7 @@ export async function DELETE(
     
     // Handle different error types
     if (error && typeof error === 'object' && 'code' in error) {
-      const dbError = error as any
+      const dbError = error as { code: string; message: string }
       if (dbError.code === '23503') {
         return NextResponse.json(
           { 

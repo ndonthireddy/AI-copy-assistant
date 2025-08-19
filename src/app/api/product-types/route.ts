@@ -7,7 +7,7 @@ export async function GET() {
     const supabase = createServerSupabaseClient()
     
     // Try to select with reference_files, fall back to basic columns if it doesn't exist
-    let query = supabase
+    const query = supabase
       .from('product_types')
       .select('id, name, instructions, created_at')
       .order('created_at', { ascending: true })
@@ -25,7 +25,7 @@ export async function GET() {
       } else {
         console.log('reference_files column not found, falling back to basic query:', errorWithRefs.message)
       }
-    } catch (refError) {
+    } catch {
       console.log('reference_files column error, using fallback query')
     }
 
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('reference_files column not found in insert, falling back:', error.message)
       }
-    } catch (refError) {
+    } catch {
       console.log('reference_files column error in insert, using fallback')
     }
 

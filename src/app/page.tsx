@@ -289,7 +289,7 @@ export default function HomePage() {
           <CardHeader className="pb-6">
             <CardTitle className="text-2xl font-semibold text-gray-900">Choose Your Copy Challenge</CardTitle>
             <CardDescription className="text-gray-600 text-base leading-relaxed max-w-[52ch]">
-              Select what type of help you need, and we'll provide tailored suggestions based on your context.
+              Select what type of help you need, and we&apos;ll provide tailored suggestions based on your context.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 md:p-10">

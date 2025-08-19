@@ -6,6 +6,13 @@ interface OpenRouterResponse {
   }>
 }
 
+type MessageRole = 'system' | 'user' | 'assistant'
+
+interface ChatMessage {
+  role: MessageRole
+  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
+}
+
 interface CopyContext {
   mode: string
   userType?: string
@@ -84,9 +91,9 @@ Always provide exactly 2-3 improved alternatives. Each suggestion should be on a
 IMPORTANT: Reference documents have been provided that contain examples, style guides, or brand guidelines for this product. Please review these files and ensure your suggestions align with the established tone, style, and patterns shown in the reference materials.`
   }
 
-  const messages = [
+  const messages: ChatMessage[] = [
     {
-      role: 'system' as const,
+      role: 'system',
       content: systemPrompt
     }
   ]
@@ -95,7 +102,7 @@ IMPORTANT: Reference documents have been provided that contain examples, style g
   if (referenceFileUrls && referenceFileUrls.length > 0) {
     console.log('OpenRouter: Adding reference files context...')
     messages.push({
-      role: 'user' as const,
+      role: 'user',
       content: `Reference documents for context (please review these for tone and style guidance):
 ${referenceFileUrls.map((url, index) => `${index + 1}. ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${url}`).join('\n')}`
     })
@@ -120,7 +127,7 @@ ${referenceFileUrls.map((url, index) => `${index + 1}. ${process.env.NEXT_PUBLIC
   }
 
   messages.push({
-    role: 'user' as const,
+    role: 'user',
     content: imageBase64 
       ? [
           { type: 'text', text: userMessageText },

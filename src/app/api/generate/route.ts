@@ -229,24 +229,46 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Store the submission in Supabase
+    // Store the submission and suggestions in Supabase
     try {
       console.log('Storing submission in database...')
-      const { error: submissionError } = await supabase
+      
+      // First store the submission
+      const { data: submissionData, error: submissionError } = await supabase
         .from('submissions')
         .insert({
           bad_copy: badCopy,
           product_type_id: productTypeId,
-          suggestions: suggestions,
           has_screenshot: !!screenshot,
           user_session: userSession
         })
+        .select()
+        .single()
 
       if (submissionError) {
         console.error('SUBMISSION STORAGE ERROR:', submissionError)
         // Don't fail the request if storage fails, just log it
       } else {
         console.log('Submission stored successfully')
+        
+        // Then store the suggestions
+        const suggestionPromises = suggestions.map(suggestion => 
+          supabase
+            .from('suggestions')
+            .insert({
+              submission_id: submissionData.id,
+              improved_copy: suggestion
+            })
+        )
+        
+        try {
+          await Promise.all(suggestionPromises)
+          console.log('Suggestions stored successfully')
+        } catch (suggestionsError) {
+          console.error('SUGGESTIONS STORAGE ERROR:', suggestionsError)
+          // Don't fail the request if suggestions storage fails
+        }
+
       }
     } catch (storageError) {
       console.error('SUBMISSION STORAGE UNEXPECTED ERROR:', storageError)
