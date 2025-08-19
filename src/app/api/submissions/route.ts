@@ -1,15 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 
 // GET - Fetch all submissions
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = createServerSupabaseClient()
     
+    // Get user session from cookie
+    const userSession = request.headers.get('cookie')?.split(';')
+      .find(c => c.trim().startsWith('user_session='))
+      ?.split('=')[1]
+    
+    if (!userSession) {
+      return NextResponse.json([]) // Return empty array if no session
+    }
+    
     // Try to select with all columns, fall back to basic columns if some don't exist
-    let query = supabase
+    const query = supabase
       .from('submissions')
       .select('id, bad_copy, suggestions, created_at')
+      .eq('user_session', userSession)
       .order('created_at', { ascending: false })
       .limit(50) // Limit to last 50 submissions
 
@@ -18,6 +28,7 @@ export async function GET() {
       const { data: submissionsWithScreenshot, error: errorWithScreenshot } = await supabase
         .from('submissions')
         .select('id, bad_copy, suggestions, has_screenshot, created_at')
+        .eq('user_session', userSession)
         .order('created_at', { ascending: false })
         .limit(50)
 
@@ -33,7 +44,7 @@ export async function GET() {
       } else {
         console.log('has_screenshot column not found, falling back to basic query:', errorWithScreenshot.message)
       }
-    } catch (screenshotError) {
+    } catch {
       console.log('has_screenshot column error, using fallback query')
     }
 

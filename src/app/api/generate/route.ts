@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
     const supabase = createServerSupabaseClient()
     
     // Try to get reference_files, fall back to just instructions if column doesn't exist
-    let productType: any = null
-    let productError: any = null
+    let productType: { instructions: string; reference_files?: unknown[] } | null = null
+    let productError: Error | null = null
 
     try {
       const { data, error } = await supabase
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         console.log('reference_files column not found, falling back to basic query:', error.message)
         throw error
       }
-    } catch (refError) {
+    } catch {
       console.log('reference_files column error, using fallback query')
       
       // Fallback to basic query without reference_files
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     console.log('Database query result:', {
       found: !!productType,
       error: productError?.message || null,
-      errorCode: productError?.code || null
+      errorCode: (productError as { code?: string })?.code || null
     })
 
     if (productError) {
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get reference files URLs from the product type
-    const referenceFileUrls = productType.reference_files?.map(file => file.url) || []
+    const referenceFileUrls = (productType.reference_files as { url: string }[] || []).map(file => file.url)
     console.log('Reference files found:', {
       count: referenceFileUrls.length,
       urls: referenceFileUrls.map(url => url.substring(url.lastIndexOf('/') + 1))
@@ -215,6 +215,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get or create user session
+    const userSession = request.cookies.get('user_session')?.value || crypto.randomUUID()
+    
+    // Set cookie if not exists
+    const response = NextResponse.json({ suggestions })
+    if (!request.cookies.get('user_session')) {
+      response.cookies.set('user_session', userSession, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30 // 30 days
+      })
+    }
+
     // Store the submission in Supabase
     try {
       console.log('Storing submission in database...')
@@ -223,9 +237,9 @@ export async function POST(request: NextRequest) {
         .insert({
           bad_copy: badCopy,
           product_type_id: productTypeId,
-          suggestions: suggestions
-          // Note: has_screenshot column doesn't exist in current schema
-          // To add this, run: ALTER TABLE submissions ADD COLUMN has_screenshot BOOLEAN DEFAULT FALSE;
+          suggestions: suggestions,
+          has_screenshot: !!screenshot,
+          user_session: userSession
         })
 
       if (submissionError) {
@@ -240,7 +254,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('=== GENERATE API SUCCESS ===')
-    return NextResponse.json({ suggestions })
+    return response
     
   } catch (error) {
     console.error('=== GENERATE API UNEXPECTED ERROR ===')
