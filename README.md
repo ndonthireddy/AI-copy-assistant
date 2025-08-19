@@ -1,4 +1,4 @@
-# CopyFixer 2.0
+# AI Copy Assistant
 
 A Next.js 14 application that helps developers improve bad UI copy using AI-powered suggestions from GPT-4o via OpenRouter.
 
